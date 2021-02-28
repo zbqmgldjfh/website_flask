@@ -30,11 +30,33 @@ def lists():
     # 한페이지 당 몇개의 개시물을 출력할지
     limit = request.args.get("limit", 10, type=int)
 
+    search = request.args.get("search", -1, type=int)
+    keyword = request.args.get("keyword", type=str)
+
+    #최종적으로 완성된 쿼리를 만들 변수 
+    query = {}
+    search_list = []
+
+    if search == 0:
+        search_list.append({"title": {"$regex": keyword}})
+    elif search == 1:
+        search_list.append({"contents": {"$regex": keyword}})
+    elif search == 2:
+        search_list.append({"title": {"$regex": keyword}})
+        search_list.append({"contents": {"$regex": keyword}})
+    elif search == 3:
+        search_list.append({"name": {"$regex": keyword}})
+
+    if len(search_list) > 0:
+        query = {"$or": search_list}
+
+    print(query)
+
     board = mongo.db.board
     datas = board.find({}).skip((page-1) * limit).limit(limit)
 
     #게시물의 총 갯수
-    tot_count = board.find({}).count()
+    tot_count = board.find(query).count()
     #마지막 페이지의 수 구하기
     last_page_num = math.ceil(tot_count / limit)
     #페이지 블럭을 5개씩 표기
@@ -47,12 +69,16 @@ def lists():
     block_last = math.ceil(block_start + (block_size - 1))
 
     return render_template("list.html", datas=datas, limit=limit, page=page, 
-    block_start=block_start, block_last=block_last, last_page_num=last_page_num)
+    block_start=block_start, block_last=block_last, last_page_num=last_page_num,
+    search=search, keyword=keyword)
 
 @app.route("/view/<idx>")
 def board_view(idx):
     #idx = request.args.get("idx")
     if idx is not None:
+        page = request.args.get("page")
+        search = request.args.get("search")
+        keyword = request.args.get("keyword")
         board = mongo.db.board
         data = board.find_one({"_id": ObjectId(idx)})
 
@@ -66,7 +92,7 @@ def board_view(idx):
                 "view": data.get("view")
             }
 
-            return render_template("view.html", result = result)
+            return render_template("view.html", result = result, page=page, search=search, keyword=keyword)
     return abort(404)
 
 @app.route("/write", methods=["GET", "POST"])

@@ -4,13 +4,12 @@ from flask import render_template
 from flask_pymongo import PyMongo
 from datetime import datetime
 from bson.objectid import ObjectId
-from flask import abort
-from flask import redirect
-from flask import url_for
+from flask import abort, redirect, url_for, flash
 import time
 import math
 app = Flask(__name__)  #flask 인스턴스 생성
 app.config["MONGO_URI"] = "mongodb://localhost:27017/myweb"
+app.config["SECRET_KEY"] = "7a5bc45d"
 mongo = PyMongo(app)
 
 @app.template_filter("formatdatetime")
@@ -22,6 +21,11 @@ def format_datetime(value):
     offset = datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp)
     value = datetime.fromtimestamp((int(value) / 1000)) + offset
     return value.strftime("%Y-%m-%d %H:%M:%S")
+
+
+@app.route("/")
+def home():
+    return "Hello Wordl!"
 
 @app.route("/list")
 def lists():
@@ -117,6 +121,44 @@ def board_write():
         return redirect(url_for("board_view", idx = x.inserted_id))
     else:
         return render_template("write.html")
+
+# 그냥 키면 requests가 get으로 넘어감 
+@app.route("/join", methods=["GET", "POST"])
+def member_join():
+    if request.method == "POST": # 가입하기를 누르면 post로 넘어오니까 
+        name = request.form.get("name", type=str)
+        email = request.form.get("email", type=str)
+        pass1 = request.form.get("pass", type=str)
+        pass2 = request.form.get("pass2", type=str)
+
+        if name == "" or email == "" or pass1 == "" or pass2 == "":
+            flash("입력되지 않은 값이 있습니다.")
+            return render_template("join.html")
+
+        if pass1 != pass2:
+            flash("비밀번호가 일치하지 않습니다.")
+            return render_template("join.html")
+
+        members = mongo.db.members
+        cnt = members.find({"email": email}).count()
+        if cnt > 0:
+            flash("이미 등록된 이메일 주소입니다.")
+
+        current_utc_time = round(datetime.utcnow().timestamp() * 1000)
+        post = {
+            "name": name,
+            "email": email,
+            "pass": pass1,
+            "joindata": current_utc_time,
+            "logintime": "",
+            "logincount": 0,
+        }
+
+        members.insert_one(post)
+
+        return ""
+    else:
+        return render_template("join.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

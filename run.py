@@ -3,13 +3,15 @@ from flask import request
 from flask import render_template
 from flask_pymongo import PyMongo
 from datetime import datetime
+from datetime import timedelta
 from bson.objectid import ObjectId
-from flask import abort, redirect, url_for, flash
+from flask import abort, redirect, url_for, flash, session
 import time
 import math
 app = Flask(__name__)  #flask 인스턴스 생성
 app.config["MONGO_URI"] = "mongodb://localhost:27017/myweb"
 app.config["SECRET_KEY"] = "7a5bc45d"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30) # 세션유지시간 30분
 mongo = PyMongo(app)
 
 @app.template_filter("formatdatetime")
@@ -159,6 +161,35 @@ def member_join():
         return ""
     else:
         return render_template("join.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def member_login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("pass")
+
+        members = mongo.db.members
+        data = members.find_one({"email": email})
+
+        if data is None:
+            flash("회원 정보가 없습니다.")
+            return redirect(url_for("member_login")) # member_login함수로 돌아감
+        else
+            if data.get("pass") == password:
+                session["email"] = email
+                session["name"] = data.get("name")
+                session["id"] = str(data.get("_id"))
+                session.permanent = True # 세션 유지시간을 할당받기위해
+                return redirect(url_for("lists"))
+            else:
+                flash("비밀번호가 일치하지 않습니다.")
+                return redirect(url_for("member_login"))
+
+        return ""
+    else:
+        return render_template("login.html")
+
 
 if __name__ == "__main__":
     app.run(debug=True)

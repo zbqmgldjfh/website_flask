@@ -33,7 +33,7 @@ def lists():
     print(query)
 
     board = mongo.db.board
-    datas = board.find({}).skip((page-1) * limit).limit(limit).sort("pubdate", -1)
+    datas = board.find({}).skip((page-1) * limit).limit(limit)
 
     #게시물의 총 갯수
     tot_count = board.find(query).count()
@@ -70,7 +70,7 @@ def board_view(idx):
                 "name": data.get("name"),
                 "title": data.get("title"),
                 "contents": data.get("contents"),
-                "pubdata": data.get("pubdata"),
+                "pubdate": data.get("pubdate"),
                 "view": data.get("view"),
                 "writer_id": data.get("writer_id", "")
             }
@@ -95,7 +95,7 @@ def board_write():
             "name": name,
             "title": title,
             "contents": contents,
-            "pubdata": current_utc_time,
+            "pubdate": current_utc_time,
             "writer_id": session.get("id"),
             "view": 0,
         }

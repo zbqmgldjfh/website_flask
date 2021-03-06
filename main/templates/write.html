@@ -2,15 +2,47 @@
 
 {% block contents %}
 <script>
+    $(document).ready(function() {
+        $('#summernote').summernote({
+            height: 300,
+            minHeight: null,
+            maxHeight: null,
+            lang : 'ko-KR',
+            popover: {
+                image: [],
+                link: [],
+                air: []
+            },
+            callbacks: {
+                onImageUpload: funtion(image) {
+                    for(var i = 0; i < image.length; i++){
+                        uploadImage(image[i]);
+                    }
+                }
+            }
+        });
+    });
+
+    funtion uploadImage(image){
+        var data = FormData();
+        data.append("image", image);
+        $.ajax({
+            url: {{}}
+        });
+    }
+
+</script>
+
+<script>
     funtion checkForm(){
         if($.trim($("#title").val()) == ""){
             alert("제목을 입력하세요!");
             $("#title").focus();
             return false;
         }
-        if($.trim($("#contents").val()) == ""){
+        if($.trim($("#summernote").val()) == ""){
             alert("내용을 입력하세요!");
-            $("#contents").focus();
+            $("#summernote").focus();
             return false;
         }
     }
